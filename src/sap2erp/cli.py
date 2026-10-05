@@ -104,4 +104,79 @@ def estimate_cmd(input: Path, rate: float, output: Path) -> None:
     console.print(table)
 
     console.print(f"\n[bold]Всего часов:[/bold] {budget.total_hours:,.0f}")
-    console.print(f"[bold]Бюджет:[/bold
+    console.print(f"[bold]Бюджет:[/bold] {budget.total_cost:,.0f} руб")
+
+    summary = {
+        "total_hours": budget.total_hours,
+        "total_cost": budget.total_cost,
+        "rate": rate,
+        "by_category": {
+            cat.value: data for cat, data in budget.by_category().items()
+        },
+    }
+    output.write_text(json.dumps(summary, ensure_ascii=False, indent=2))
+    console.print(f"\n[green]Сохранено: {output}[/green]")
+
+
+@main.command()
+@click.option("--materials", type=click.Path(exists=True, path_type=Path))
+@click.option("--customers", type=click.Path(exists=True, path_type=Path))
+@click.option("--out", "output_dir", type=click.Path(path_type=Path), default="out")
+def etl(materials: Path | None, customers: Path | None, output_dir: Path) -> None:
+    """ETL трансформация мастер-данных."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if materials:
+        console.print(f"[cyan]Обработка материалов: {materials}[/cyan]")
+        sap_df = pd.read_csv(materials)
+        transformed = transform_materials(sap_df)
+        result = validate(transformed, "materials")
+
+        if result.is_valid:
+            console.print(f"[green]✓ Валидация пройдена[/green]")
+        else:
+            console.print(f"[yellow]⚠ Ошибки: {result.errors}[/yellow]")
+
+        out_path = output_dir / "1c_nomenclature.csv"
+        export_csv(transformed, out_path)
+        console.print(f"  Записей: {len(transformed)}")
+        console.print(f"  → {out_path}")
+
+    if customers:
+        console.print(f"\n[cyan]Обработка контрагентов: {customers}[/cyan]")
+        sap_df = pd.read_csv(customers)
+        transformed = transform_customers(sap_df)
+        result = validate(transformed, "customers")
+
+        if result.is_valid:
+            console.print(f"[green]✓ Валидация пройдена[/green]")
+        else:
+            console.print(f"[yellow]⚠ Ошибки: {result.errors}[/yellow]")
+
+        out_path = output_dir / "1c_contractors.csv"
+        export_csv(transformed, out_path)
+        console.print(f"  Записей: {len(transformed)}")
+        console.print(f"  → {out_path}")
+
+
+@main.command()
+@click.option("--input", "-i", type=click.Path(exists=True, path_type=Path), required=True)
+@click.option("--rules", "-r", type=click.Choice(["materials", "customers"]), required=True)
+def validate_cmd(input: Path, rules: str) -> None:
+    """Валидация трансформированного файла."""
+    df = pd.read_csv(input)
+    result = validate(df, rules)
+
+    console.print(f"[bold]Валидация: {input}[/bold]")
+    console.print(f"Записей: {result.total_rows}")
+
+    if result.is_valid:
+        console.print("[green]✓ Валидация пройдена[/green]")
+    else:
+        console.print(f"[red]✗ Найдены ошибки:[/red]")
+        for err in result.errors:
+            console.print(f"  • {err}")
+
+
+if __name__ == "__main__":
+    main()
