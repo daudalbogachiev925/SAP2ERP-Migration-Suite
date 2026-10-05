@@ -1,0 +1,10 @@
+##Это бинарный файл — картинка. Создашь сам:
+
+Запусти CLI на примерах:
+sap2erp estimate --input examples/sap_inventory_sample.csv --rate 3500
+Сделай скриншот терминала (Win+Shift+S).
+
+Сохрани как docs/screenshot.png.
+
+В README уже есть ссылка ![report](docs/screenshot.png) — замени на ![estimate](docs/screenshot.png) при необходимости.
+
