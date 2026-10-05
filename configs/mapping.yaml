@@ -1,0 +1,44 @@
+materials:
+  source: sap.mara
+  target: 1c.Catalog_Номенклатура
+  fields:
+    - source: MATNR
+      target: Артикул
+      required: true
+    - source: MAKTX
+      target: Наименование
+      required: true
+    - source: MEINS
+      target: ЕдиницаИзмерения
+      transform: unit_map
+    - source: MATKL
+      target: Группа
+      transform: group_map
+    - source: MTART
+      target: ВидНоменклатуры
+      transform: type_map
+  validators:
+    - required: [Артикул, Наименование]
+    - unique: [Артикул]
+
+customers:
+  source: sap.kna1
+  target: 1c.Catalog_Контрагенты
+  fields:
+    - source: KUNNR
+      target: SAP_ID
+    - source: NAME1
+      target: Наименование
+      required: true
+    - source: STCD1
+      target: ИНН
+    - source: ORT01
+      target: Город
+    - source: LAND1
+      target: Страна
+      transform: country_map
+  validators:
+    - required: [Наименование]
+    - pattern:
+        field: ИНН
+        regex: "^(\\d{10}|\\d{12})?$"
